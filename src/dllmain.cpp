@@ -25,7 +25,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call,
                       LPVOID lpReserved) {
   switch (ul_reason_for_call) {
   case DLL_PROCESS_ATTACH: {
-    // openConsole();
+    openConsole();
     if (FAILED(Windows::Foundation::Initialize(RO_INIT_MULTITHREADED))) {
       printf("Windows::Foundation::Initialize failed\n");
       return TRUE;
@@ -33,7 +33,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call,
     Options::init();
     Options::load();
 
-    initMCHooks();
     initMCPatches();
     initImGuiHooks();
 
