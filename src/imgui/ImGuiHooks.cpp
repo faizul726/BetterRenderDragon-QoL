@@ -15,10 +15,12 @@
 #include "imgui_impl_winrt.h"
 
 #include "ImGuiHooks.h"
-#include "HookAPI.h"
-#include "Options.h"
+#include "gui/Options.h"
 #include "Version.h"
-#include "GUI.h"
+#include "gui/GUI.h"
+
+#include "api/memory/Memory.h"
+#include "api/memory/Hook.h"
 // clang-format on
 
 //=======================================================================================================================================================================
@@ -327,11 +329,12 @@ HRESULT STDMETHODCALLTYPE IDXGIFactory2_CreateSwapChainForCoreWindow_Hook(
       // Direct3D 12
       ImGuiD3D12::commandQueue = (ID3D12CommandQueue *)pDevice;
       if (!ImGuiD3D12::Original_IDXGISwapChain_Present)
-        ReplaceVtable(*(void **)swapChain, 8,
-                      (void **)&ImGuiD3D12::Original_IDXGISwapChain_Present,
-                      ImGuiD3D12::IDXGISwapChain_Present_Hook);
+        memory::ReplaceVtable(
+            *(void **)swapChain, 8,
+            (void **)&ImGuiD3D12::Original_IDXGISwapChain_Present,
+            ImGuiD3D12::IDXGISwapChain_Present_Hook);
       if (!ImGuiD3D12::Original_IDXGISwapChain_ResizeBuffers)
-        ReplaceVtable(
+        memory::ReplaceVtable(
             *(void **)swapChain, 13,
             (void **)&ImGuiD3D12::Original_IDXGISwapChain_ResizeBuffers,
             ImGuiD3D12::IDXGISwapChain_ResizeBuffers_Hook);
@@ -343,11 +346,12 @@ HRESULT STDMETHODCALLTYPE IDXGIFactory2_CreateSwapChainForCoreWindow_Hook(
       // Direct3D 11
       ImGuiD3D11::device = (ID3D11Device *)pDevice;
       if (!ImGuiD3D11::Original_IDXGISwapChain_Present)
-        ReplaceVtable(*(void **)swapChain, 8,
-                      (void **)&ImGuiD3D11::Original_IDXGISwapChain_Present,
-                      ImGuiD3D11::IDXGISwapChain_Present_Hook);
+        memory::ReplaceVtable(
+            *(void **)swapChain, 8,
+            (void **)&ImGuiD3D11::Original_IDXGISwapChain_Present,
+            ImGuiD3D11::IDXGISwapChain_Present_Hook);
       if (!ImGuiD3D11::Original_IDXGISwapChain_ResizeBuffers)
-        ReplaceVtable(
+        memory::ReplaceVtable(
             *(void **)swapChain, 13,
             (void **)&ImGuiD3D11::Original_IDXGISwapChain_ResizeBuffers,
             ImGuiD3D11::IDXGISwapChain_ResizeBuffers_Hook);
@@ -366,18 +370,19 @@ HRESULT STDMETHODCALLTYPE IDXGIFactory2_CreateSwapChainForCoreWindow_Hook(
 
 //=======================================================================================================================================================================
 
-DeclareHook(CreateDXGIFactory1, HRESULT, REFIID riid, void **ppFactory) {
-  HRESULT hResult = original(riid, ppFactory);
+HRESULT (*createDXGIFactory1Original)(REFIID riid, void **ppFactory) = nullptr;
+HRESULT createDXGIFactory1Hook(REFIID riid, void **ppFactory) {
+  HRESULT hResult = createDXGIFactory1Original(riid, ppFactory);
   if (IsEqualIID(IID_IDXGIFactory2, riid) && SUCCEEDED(hResult)) {
     printf("CreateDXGIFactory1 riid=IID_IDXGIFactory2\n");
-    IDXGIFactory2 *factory = (IDXGIFactory2 *)*ppFactory;
-    if (!Original_IDXGIFactory2_CreateSwapChainForCoreWindow)
-      ReplaceVtable(
-          *(void **)factory, 16,
+    IDXGIFactory2 *factory2 = (IDXGIFactory2 *)*ppFactory;
+    if (!Original_IDXGIFactory2_CreateSwapChainForCoreWindow) {
+      memory::ReplaceVtable(
+          *(void **)factory2, 16,
           (void **)&Original_IDXGIFactory2_CreateSwapChainForCoreWindow,
           IDXGIFactory2_CreateSwapChainForCoreWindow_Hook);
-
-    ::factory = factory;
+    }
+    factory = factory2;
   }
   return hResult;
 }
@@ -385,16 +390,9 @@ DeclareHook(CreateDXGIFactory1, HRESULT, REFIID riid, void **ppFactory) {
 //=======================================================================================================================================================================
 
 void initImGuiHooks() {
-  HMODULE dxgiModule = GetModuleHandleA("dxgi.dll");
-  if (!dxgiModule) {
-    return;
-  }
-
-  FARPROC CreateDXGIFactory1 = GetProcAddress(dxgiModule, "CreateDXGIFactory1");
-  if (!CreateDXGIFactory1)
-    return;
-
-  Hook(CreateDXGIFactory1, CreateDXGIFactory1);
+  memory::hook(CreateDXGIFactory1, createDXGIFactory1Hook,
+               (memory::FuncPtr *)&createDXGIFactory1Original,
+               memory::HookPriority::Normal);
 }
 
 //=======================================================================================================================================================================

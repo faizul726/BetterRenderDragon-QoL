@@ -1,10 +1,10 @@
 ﻿#include <windows.h>
 #include <wrl.h>
 
-#include "ImGuiHooks.h"
-#include "MCHooks.h"
 #include "MCPatches.h"
-#include "Options.h"
+#include "gui/Options.h"
+#include "imgui/ImGuiHooks.h"
+
 
 #include <fcntl.h>
 #include <io.h>

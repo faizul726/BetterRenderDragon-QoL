@@ -1,6 +1,4 @@
-#include "MCHooks.h"
-#include "HookAPI.h"
-#include "Options.h"
+#include "gui/Options.h"
 
 #include "Core/Math/Vec4.h"
 #include "Core/Resource/ResourceHelper.h"
@@ -68,8 +66,6 @@ void *newVideoSettingsOptionPtr = nullptr;
 
 //=====================================================MaterialBinLoader====================================================
 
-#include "materialbin.h"
-
 typedef bool (*PFN_ResourcePackManager_load)(void *This,
                                              const ResourceLocation &location,
                                              std::string &resourceStream);
@@ -87,14 +83,15 @@ SKY_AUTO_STATIC_HOOK(
          "40 53 48 83 EC 20 48 8B 01 48 8B D9 48 8B 40 ? FF 15 ? ? ? ? 84 "
          "C0 74 ? 48 8B 03 48 8B CB 48 8B 40 ? FF 15 ? ? ? ? 84 C0 74"}),
     bool, void *This) {
-  ReplaceVtable(*(void **)This, 8,
-                (void **)&RayTracingOptions_isDeferredShadingAvailable,
-                RayTracingOptions_isDeferredShadingAvailable_Hook);
-  ReplaceVtable(*(void **)This, 9, (void **)&RayTracingOptions_getLightingModel,
-                RayTracingOptions_getLightingModel_Hook);
-  ReplaceVtable(*(void **)This, 10,
-                (void **)&RayTracingOptions_setLightingModel,
-                RayTracingOptions_setLightingModel_Hook);
+  memory::ReplaceVtable(*(void **)This, 8,
+                        (void **)&RayTracingOptions_isDeferredShadingAvailable,
+                        RayTracingOptions_isDeferredShadingAvailable_Hook);
+  memory::ReplaceVtable(*(void **)This, 9,
+                        (void **)&RayTracingOptions_getLightingModel,
+                        RayTracingOptions_getLightingModel_Hook);
+  memory::ReplaceVtable(*(void **)This, 10,
+                        (void **)&RayTracingOptions_setLightingModel,
+                        RayTracingOptions_setLightingModel_Hook);
   bool result = origin(This);
   unhook();
   return result;
@@ -234,15 +231,13 @@ SKY_AUTO_STATIC_HOOK(
 
   void *result = origin(This, a2, a3, needsToInitialize);
   if (needsToInitialize && !resourcePackManager) {
-    // printf("ResourcePackManager::ResourcePackManager
-    // needsToInitialize=true\n");
-
     resourcePackManager = This;
     void **vptr = *(void ***)resourcePackManager;
     ResourcePackManager_load = (PFN_ResourcePackManager_load) * (vptr + 3);
   }
   return result;
 }
+
 // AppPlatform::readAssetFile
 SKY_AUTO_STATIC_HOOK(
     readAssetFileHOOK, memory::HookPriority::Normal,
@@ -271,22 +266,8 @@ SKY_AUTO_STATIC_HOOK(
 
       bool success =
           ResourcePackManager_load(resourcePackManager, location, out);
-      if (success && !out.empty()) {
-        bool successful_update = true;
-        struct Buffer outbufdata = {0, 0};
-        if (update_file(out.length(), (const uint8_t *)out.c_str(),
-                        &outbufdata) != 0) {
-          // printf("Updating failed!");
-          successful_update = false;
-          free_buf(outbufdata);
-        }
-
-        if (!successful_update) {
-          retstr->assign(out);
-        } else {
-          retstr->assign((const char *)outbufdata.data, outbufdata.len);
-          free_buf(outbufdata);
-        }
+      if (success) {
+        retstr->assign(out);
       }
       // printf("ResourcePackManager::load ret=%d\n", success);
     }

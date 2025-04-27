@@ -1,7 +1,65 @@
-#include "HookAPI.h"
+#include <Windows.h>
+
+#include <psapi.h>
+#include <vector>
 
 #include "MCPatches.h"
-#include "Options.h"
+#include "api/memory/Hook.h"
+#include "gui/Options.h"
+inline uintptr_t FindSig(const std::string &moduleName,
+                         const std::string &signature) {
+  HMODULE moduleHandle = GetModuleHandleA(moduleName.c_str());
+  if (!moduleHandle) {
+    return 0;
+  }
+
+  MODULEINFO moduleInfo{};
+  if (!GetModuleInformation(GetCurrentProcess(), moduleHandle, &moduleInfo,
+                            sizeof(MODULEINFO))) {
+    return 0;
+  }
+
+  std::vector<uint16_t> pattern;
+  for (int i = 0; i < signature.size(); i++) {
+    if (signature[i] == ' ') {
+      continue;
+    }
+    if (signature[i] == '?') {
+      pattern.push_back(0xFF00);
+      i++;
+    } else {
+      char buf[3]{signature[i], signature[++i], 0};
+      pattern.push_back((uint16_t)strtoul(buf, nullptr, 16));
+    }
+  }
+
+  if (pattern.size() == 0) {
+    return (uintptr_t)moduleHandle;
+  }
+
+  int patternIdx = 0;
+  uintptr_t match = 0;
+  for (uintptr_t i = (uintptr_t)moduleHandle;
+       i < (uintptr_t)moduleHandle + moduleInfo.SizeOfImage; i++) {
+    uint8_t current = *(uint8_t *)i;
+    if (current == pattern[patternIdx] || pattern[patternIdx] & 0xFF00) {
+      if (!match) {
+        match = i;
+      }
+      if (++patternIdx == pattern.size()) {
+        return match;
+      }
+    } else {
+      if (match) {
+        i--;
+      }
+      match = 0;
+      patternIdx = 0;
+    }
+  }
+
+  return 0;
+}
 
 #undef FindSignature
 #define FindSignature(signature)                                               \

@@ -3,15 +3,13 @@
 #include <string>
 #include <vector>
 
-
 #include <Windows.Storage.h>
 #include <wrl.h>
 
 #include "Options.h"
-#include "Util.h"
 #include "imgui.h"
 #include "nlohmann/json.hpp"
-
+#include "utils/Util.h"
 
 namespace Options {
 Option<bool> showImGui = true;

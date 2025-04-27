@@ -1,12 +1,14 @@
 #pragma once
 
-#include "Memory.h"
 #include "api/Macro.h"
+#include "api/memory/Memory.h"
 #include <type_traits>
 
 #define LOG(...)
 
 namespace memory {
+
+using FuncPtr = void *;
 
 void unhookAll();
 

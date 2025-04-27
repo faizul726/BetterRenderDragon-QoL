@@ -1,4 +1,4 @@
-#include "Hook.h"
+#include "api/memory/Hook.h"
 
 #include <Windows.h>
 #include <iostream>
@@ -6,14 +6,14 @@
 #include <set>
 #include <unordered_map>
 
+#include "api/memory/win/Memory.h"
 #include "detours/detours.h"
 
-#include "api/thread/GlobalThreadPauser.h"
+#include "api/memory/win/thread/GlobalThreadPauser.h"
 
 namespace memory {
 
 FuncPtr resolveIdentifier(char const *identifier) {
-  // don't have symbol resolver yet
   return resolveSignature(identifier);
 }
 
