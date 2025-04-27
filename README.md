@@ -51,6 +51,12 @@ _**YOU HAVE TO DO THIS EVERYTIME YOU WANT TO USE BRD!**_
 - FindFirstFileW failed: error [00000002] The system cannot find the file specified.
 - Most likely is your antivirus deleted the BetterRenderDragon dll file inside dlls folder, you can add BetterRenderDragon to your antivirus software's whitelist.
 
+- ## Discord Community
+
+Join our Discord community for support and discussion!
+
+[Join Discord](https://discord.gg/8nGcV8QkKZ)
+
 ## Note
 
 **This Program is not affiliated with Mojang Studios**.
