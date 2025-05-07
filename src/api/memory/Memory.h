@@ -33,5 +33,4 @@ constexpr FuncPtr toFuncPtr(T t) {
   return u.fp;
 }
 
-void ReplaceVtable(void *_vptr, size_t index, void **outOldFunc, void *newFunc);
 } // namespace memory

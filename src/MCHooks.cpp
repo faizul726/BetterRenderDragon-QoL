@@ -1,4 +1,3 @@
-#include "gui/Options.h"
 
 #include "Core/Math/Vec4.h"
 #include "Core/Resource/ResourceHelper.h"
@@ -6,61 +5,15 @@
 #include "Renderdragon/Materials/MaterialUniformName.h"
 #include "Renderdragon/Materials/ShaderCodePlatform.h"
 #include "Renderdragon/Rendering/LightingModels.h"
-#include "gsl/span"
 
 #include <iostream>
 //=====================================================Vanilla2Deferred=====================================================
 
-bool shouldForceEnableDeferredRendering() {
-  return Options::vanilla2DeferredAvailable &&
-         Options::vanilla2DeferredEnabled &&
-         !Options::newVideoSettingsAvailable &&
-         Options::deferredRenderingEnabled;
-}
-
-bool shouldForceEnableNewVideoSettings() {
-  return Options::vanilla2DeferredAvailable &&
-         Options::vanilla2DeferredEnabled &&
-         Options::newVideoSettingsAvailable &&
-         Options::forceEnableDeferredTechnicalPreview;
-}
-
-bool (*RayTracingOptions_isDeferredShadingAvailable)(void *This) = nullptr;
-bool RayTracingOptions_isDeferredShadingAvailable_Hook(void *This) {
-  // printf("RayTracingOptions::isDeferredShadingAvailable");
-  if (shouldForceEnableNewVideoSettings()) {
-    return true;
-  }
-  return RayTracingOptions_isDeferredShadingAvailable(This);
-}
+char globalGraphicsMode = 0;
 
 using dragon::rendering::LightingModels;
 
-LightingModels (*RayTracingOptions_getLightingModel)(void *This) = nullptr;
-LightingModels RayTracingOptions_getLightingModel_Hook(void *This) {
-  LightingModels result = RayTracingOptions_getLightingModel(This);
-  // printf("RayTracingOptions::getLightingModel result=%d\n", result);
-
-  if (shouldForceEnableDeferredRendering() &&
-      result == LightingModels::Vanilla) {
-    result = LightingModels::Deferred;
-  }
-  return result;
-}
-
-void (*RayTracingOptions_setLightingModel)(
-    void *This, LightingModels lightingModel) = nullptr;
-void RayTracingOptions_setLightingModel_Hook(void *This,
-                                             LightingModels lightingModel) {
-  if (shouldForceEnableDeferredRendering() &&
-      lightingModel == LightingModels::Vanilla) {
-    lightingModel = LightingModels::Deferred;
-  }
-
-  RayTracingOptions_setLightingModel(This, lightingModel);
-}
-
-void *newVideoSettingsOptionPtr = nullptr;
+// void *newVideoSettingsOptionPtr = nullptr;
 
 //======================================================CustomUniforms======================================================
 
@@ -72,149 +25,175 @@ typedef bool (*PFN_ResourcePackManager_load)(void *This,
 
 //==========================================================================================================================
 
-void initMCHooks() {}
-
 #include "api/memory/Hook.h"
-// RayTracingOptions::isRayTracingAvailable
-SKY_AUTO_STATIC_HOOK(
-    RayTracingOptions_isRayTracingAvailable, memory::HookPriority::Normal,
-    std::initializer_list<const char *>(
-        {// 1.21.50
-         "40 53 48 83 EC 20 48 8B 01 48 8B D9 48 8B 40 ? FF 15 ? ? ? ? 84 "
-         "C0 74 ? 48 8B 03 48 8B CB 48 8B 40 ? FF 15 ? ? ? ? 84 C0 74"}),
-    bool, void *This) {
-  memory::ReplaceVtable(*(void **)This, 8,
-                        (void **)&RayTracingOptions_isDeferredShadingAvailable,
-                        RayTracingOptions_isDeferredShadingAvailable_Hook);
-  memory::ReplaceVtable(*(void **)This, 9,
-                        (void **)&RayTracingOptions_getLightingModel,
-                        RayTracingOptions_getLightingModel_Hook);
-  memory::ReplaceVtable(*(void **)This, 10,
-                        (void **)&RayTracingOptions_setLightingModel,
-                        RayTracingOptions_setLightingModel_Hook);
-  bool result = origin(This);
-  unhook();
-  return result;
-}
 
-SKY_AUTO_STATIC_HOOK(
-    makeBoolOption, memory::HookPriority::Normal,
-    std::initializer_list<const char *>(
-        {// 1.21.50
-         "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 41 54 41 55 41 56 "
-         "41 57 48 8D 6C 24 ? 48 81 EC C0 00 00 00 4D 8B E1 4C 89 4D ? "
-         "4C 89 45 ? 48 89 55 ? 48 8B F9 48 89 4D ? 48 89 4D ? 4C 8B 7D "
-         "? 4C 89 7D ? 4C 8B 6D ? 45 33 F6",
-         // 1.21.60
-         "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 41 54 41 55 41 56 "
-         "41 57 48 8D 6C 24 ? 48 81 EC C0 00 00 00 4C 89 4D ? 4C 89 45 ? "
-         "48 89 55 ? 4C 8B E9 48 89 4D ? 48 89 4D ? 4C 8B 65 ? 4C 89 65 "
-         "? 4C 8B 7D ? 4C 89 7D ? 33 FF"}),
-    void **, void **a1, uintptr_t a2, uintptr_t a3, uintptr_t a4,
-    const char *a5, const char *a6, uintptr_t a7) {
-  void **result = origin(a1, a2, a3, a4, a5, a6, a7);
-  if (!newVideoSettingsOptionPtr && a1 && a5 && a6 &&
-      strcmp(a5, "options.newVideoSettings") == 0 &&
-      strcmp(a6, "new_video_settings") == 0) {
-    // printf("options.newVideoSettings\n");
-    newVideoSettingsOptionPtr = *a1;
-    // std::cout << "newVideoSettingsOptionPtr: " << newVideoSettingsOptionPtr
-    //           << std::endl;
-    Options::newVideoSettingsAvailable = true;
+int NEW_VIDEO_SETTINGS = 0;
+
+SKY_AUTO_STATIC_HOOK(getGameVersionString, memory::HookPriority::Normal,
+                     std::initializer_list<const char *>(
+                         {// Win 1.21.60
+                          "48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 54 41 56 41 57 "
+                          "48 83 EC 60 48 8B F9 48 89 4C 24 ? 45 33 E4",
+
+                          // Android 1.21.60
+                          "? ? ? D1 ? ? ? A9 ? ? ? 91 ? ? ? A9 ? ? ? D5 F3 03 "
+                          "08 AA ? ? ? F9 E8 03 00 91 ? ? ? F8 ? ? ? 94 ? ? ? "
+                          "D0 E0 03 00 91 ? ? ? 91 E1 03 1F AA ? ? ? 94"}),
+                     std::string, std::string *result) {
+  auto version = origin(result);
+  if (version.find("1.21.6") != std::string::npos) {
+    NEW_VIDEO_SETTINGS = 723;
+  } else if (version.find("1.21.7") != std::string::npos) {
+    NEW_VIDEO_SETTINGS = 726;
+  } else if (version.find("1.21.8") != std::string::npos) {
+    NEW_VIDEO_SETTINGS = 730;
   }
-  return result;
+  return version;
 }
 
 SKY_AUTO_STATIC_HOOK(
-    Option_getBool, memory::HookPriority::Normal,
+    isDeferredShadingAvailable, memory::HookPriority::Normal,
     std::initializer_list<const char *>(
-        {// 1.21.50
-         "48 8B 41 ? 48 8B 90 ? ? ? ? 48 85 D2 74 ? 48 8B 4A"}),
-    bool, void *This) {
-  if (shouldForceEnableNewVideoSettings() &&
-      This == newVideoSettingsOptionPtr) {
-    // printf("Option::getBool\n");
+        {// Win 1.21.60
+         "40 53 48 83 EC 20 48 8B 01 48 8B D9 48 8B 40 ? FF 15 ? ? ? ? 84 C0 "
+         "74 ? 48 8B 03 48 8B CB 48 8B 40 ? FF 15 ? ? ? ? 84 C0 75 ? 48 8B 03",
+
+         // Android 1.21.60
+         "? ? ? A9 ? ? ? F9 FD 03 00 91 ? ? ? F9 F3 03 00 AA ? ? ? F9 00 01 3F "
+         "D6 ? ? ? 36 ? ? ? F9 E0 03 13 AA ? ? ? F9 00 01 3F D6 ? ? ? 36 ? ? ? "
+         "52"}),
+    bool, int64_t a1) {
+  return true;
+}
+
+SKY_AUTO_STATIC_HOOK(checkDeferredShadingSupport, memory::HookPriority::Normal,
+                     std::initializer_list<const char *>({
+                         // Android 1.21.70
+                         "FD 7B BF A9 FD 03 00 91 93 33 01 94",
+                     }),
+                     bool) {
+  return true;
+}
+
+SKY_AUTO_STATIC_HOOK(
+    RPM_supportsVibrantVisuals, memory::HookPriority::Normal,
+    std::initializer_list<const char *>({
+        // Win 1.21.80
+        "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 81 ? ? ? ? 48 8B F1",
+        // Android 1.21.80
+    }),
+    bool, void *a1) {
+  return true;
+}
+
+SKY_AUTO_STATIC_HOOK(getDeferred, memory::HookPriority::Normal,
+                     std::initializer_list<const char *>({
+                         // Android 1.21.70
+                         "FF 83 01 D1 FD 7B 02 A9 FD 83 00 91 F7 1B 00 F9 F6 "
+                         "57 04 A9 F4 4F 05 A9 57 D0 3B D5 C1 5A 80 52",
+
+                     }),
+                     bool, void *_this) {
+  if (globalGraphicsMode == 2) {
     return true;
   }
-  return origin(This);
+  return origin(_this);
+}
+
+SKY_AUTO_STATIC_HOOK(RayTracingsetGraphicsMode, memory::HookPriority::Normal,
+                     std::initializer_list<const char *>(
+                         {// Win 1.21.70
+                          "88 51 ? 80 FA 01",
+                          // Android 1.21.60
+                          "28 1C 00 12 1F 05 00 71 48 00 00 54 01 00 01 39"}),
+                     void, void *a1, unsigned char Graphics) {
+  globalGraphicsMode = Graphics;
+  origin(a1, Graphics);
 }
 
 SKY_AUTO_STATIC_HOOK(
-    Option_get, memory::HookPriority::Normal,
-    std::initializer_list<const char *>(
-        {// 1.21.50
-         "40 53 48 83 EC 20 48 8B DA 41 8B D0 E8 ? ? ? ? 48 85 C0"}),
-    void **, void *This, void **result, int a3) {
-  auto res = origin(This, result, a3);
-  if (shouldForceEnableNewVideoSettings() &&
-      *res == newVideoSettingsOptionPtr) {
-    if (newVideoSettingsOptionPtr) {
-      *(bool *)((uintptr_t)newVideoSettingsOptionPtr + 0x10) = true;
-      *(bool *)((uintptr_t)newVideoSettingsOptionPtr + 0x11) = true;
-    } else {
-      *(bool *)((uintptr_t)newVideoSettingsOptionPtr + 0x10) = false;
-      *(bool *)((uintptr_t)newVideoSettingsOptionPtr + 0x11) = false;
+    RayTracingsetLightingModel, memory::HookPriority::Normal,
+    std::initializer_list<const char *>({// Win 1.21.60
+                                         "89 51 ? 85 D2 74",
+                                         // Android 1.21.60
+                                         "41 00 00 34 01 3C 00 B9"}),
+    void, void *a1, LightingModels lightingModel) {
+  if (globalGraphicsMode == 2) {
+    if (lightingModel == LightingModels::Vanilla) {
+      lightingModel = LightingModels::Deferred;
     }
   }
-  return res;
+  origin(a1, lightingModel);
 }
 
-SKY_AUTO_STATIC_HOOK(
-    Option_set_bool, memory::HookPriority::Normal,
-    std::initializer_list<const char *>({// 1.21.50
-                                         "40 53 48 83 EC 30 48 8B 05 ? ? ? ? "
-                                         "48 33 C4 48 89 44 24 ? 48 8B D9 48 "
-                                         "8B 49 ? 48 83 B9 ? ? ? ? ? 0F 85"}),
-    void, void *This, bool *value) {
-  if (shouldForceEnableNewVideoSettings() &&
-      This == newVideoSettingsOptionPtr) {
-    // printf("Option::set<bool>\n");
-    *value = true;
-  }
-  origin(This, value);
-}
-
-SKY_AUTO_STATIC_HOOK(
-    BoolOption_set, memory::HookPriority::Normal,
-    std::initializer_list<const char *>(
-        {// 1.21.50
-         "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 30 48 8B 05 ? ? ? ? 48 33 C4 "
-         "48 89 44 24 ? 48 8B D9 41 0F B6 F0"}),
-    void, void *This, bool value, char a3) {
-  if (shouldForceEnableNewVideoSettings() &&
-      This == newVideoSettingsOptionPtr) {
-    // printf("BoolOption::set\n");
-    value = true;
-  }
-  origin(This, value, a3);
-}
-
-SKY_AUTO_STATIC_HOOK(
-    isLightingModelSupportedHOOK, memory::HookPriority::Normal,
-    std::initializer_list<const char *>({// 1.21.50
-                                         "83 F9 01 75 ? 84 D2 75"}),
-    bool, void *a1, LightingModels lightingModel, char a3) {
-  if (shouldForceEnableNewVideoSettings() &&
-      lightingModel == LightingModels::Deferred) {
-    return true;
+SKY_AUTO_STATIC_HOOK(bgfxsetLightingModel, memory::HookPriority::Normal,
+                     std::initializer_list<const char *>(
+                         {// Win 1.21.70
+                          "39 91 ? ? ? ? 89 91",
+                          // Android 1.21.70
+                          "? ? ? B9 ? ? ? B9 1F 01 01 6B E8 07 9F 1A"}),
+                     char, void *a1, LightingModels lightingModel, char *a3) {
+  if (globalGraphicsMode == 2) {
+    if (lightingModel == LightingModels::Vanilla) {
+      lightingModel = LightingModels::Deferred;
+    }
   }
   return origin(a1, lightingModel, a3);
 }
 
-// GeneralSettingsScreenController::_registerControllerCallbacks
-SKY_AUTO_STATIC_HOOK(GeneralSettingsScreenControllerHOOK,
-                     memory::HookPriority::Normal,
-                     std::initializer_list<const char *>(
-                         {// 1.21.50
-                          "48 89 5C 24 ? 57 48 83 EC 50 48 8B D9 C7 44 24"}),
-                     bool, void *a1) {
-  bool result = origin(a1);
-  if (shouldForceEnableNewVideoSettings()) {
-    // std::cout << "graphicsModeRadioDeferredEnabledCallback " << std::endl;
-    result = true;
-  }
+/*
+SKY_AUTO_STATIC_HOOK(
+    getGraphicsMode, memory::HookPriority::Normal,
+    std::initializer_list<const char *>(
+        {// Win 1.21.60
+         "40 53 48 83 EC 20 48 8B 01 48 8B D9 48 8B 80 ? ? ? "
+         "? FF 15 ? ? ? ? 84 C0 74 ? B0 02",
+         // Android 1.21.60
+         "? ? ? A9 ? ? ? F9 FD 03 00 91 ? ? ? F9 F3 03 00 AA ? ? ? F9 00 01 3F "
+         "D6 ? ? ? 36 ? ? ? 52 ? ? ? F9 ? ? ? A8 C0 03 5F D6 ? ? ? F9"}),
+    char, void *a1) {
+  char result = origin(a1);
+  globalGraphicsMode = result;
   return result;
 }
+*/
+
+// BaseOptions::get
+SKY_AUTO_STATIC_HOOK(
+    Option_get, memory::HookPriority::Normal,
+    std::initializer_list<const char *>(
+        {// Win 1.21.50
+         "48 89 5C 24 ? 48 89 74 24 ? 57 48 81 EC 80 00 00 00 33 C0",
+         // Android 1.21.60
+         "? ? ? D1 ? ? ? A9 ? ? ? 91 ? ? ? A9 ? ? ? D5 ? ? ? F9 ? ? ? 71 ? ? ? "
+         "F8 ? ? ? 54 09 4C 21 8B"}),
+    void *, void *This, int a3) {
+  auto res = origin(This, a3);
+  if (a3 == NEW_VIDEO_SETTINGS) {
+    *(bool *)((uintptr_t)res + 0x10) = true;
+    *(bool *)((uintptr_t)res + 0x11) = true;
+  }
+  return res;
+}
+
+// GeneralSettingsScreenController::_registerControllerCallbacks
+SKY_AUTO_STATIC_HOOK(
+    GeneralSettingsScreenControllerHOOK, memory::HookPriority::Normal,
+    std::initializer_list<const char *>(
+        {// Win 1.21.50
+         "48 89 5C 24 ? 57 48 83 EC 50 48 8B D9 C7 44 24",
+         // Win 1.21.80
+         "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 60 C7 44 24 ? ? ? ? ? 48 8B "
+         "39",
+
+         // Android 1.21.60
+         "? ? ? A9 ? ? ? F9 FD 03 00 91 ? ? ? A9 ? ? ? F9 ? ? ? F9 ? ? ? B4 ? "
+         "? ? F9 ? ? ? F9 00 01 3F D6 ? ? ? 36 ? ? ? F9 ? ? ? 97"}),
+    bool, void *a1) {
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void *resourcePackManager;
 PFN_ResourcePackManager_load ResourcePackManager_load;
@@ -223,7 +202,8 @@ SKY_AUTO_STATIC_HOOK(
     ResourcePackManagerConstructor, memory::HookPriority::Normal,
     std::initializer_list<const char *>(
         {// 1.21.50
-         "4C 8B DC 53 55 56 57 41 54 41 56 41 57 48 81 EC A0 00 00 00 41 0F B6 "
+         "4C 8B DC 53 55 56 57 41 54 41 56 41 57 48 81 EC A0 00 00 00 41 0F "
+         "B6 "
          "E9",
          // 1.21.60
          "4C 8B DC 49 89 5B ? 49 89 53 ? 49 89 4B ? 55 56 57 41 56"}),
@@ -253,8 +233,7 @@ SKY_AUTO_STATIC_HOOK(
          "00 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 ? 48 8B FA"}),
     std::string *, void *This, std::string *retstr, Core::Path &path) {
   std::string *result = origin(This, retstr, path);
-  if (Options::materialBinLoaderEnabled && Options::redirectShaders &&
-      resourcePackManager) {
+  if (resourcePackManager) {
     const std::string &p = path.getUtf8StdString();
     if (p.find("/data/renderer/materials/") != std::string::npos &&
         strncmp(p.c_str() + p.size() - 13, ".material.bin", 13) == 0) {

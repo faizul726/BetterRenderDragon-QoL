@@ -2,23 +2,23 @@
 #include <wrl.h>
 
 #include "MCPatches.h"
-#include "gui/Options.h"
-#include "imgui/ImGuiHooks.h"
 
-
+#include <cstdio>
 #include <fcntl.h>
 #include <io.h>
 
 void openConsole() {
-  AllocConsole();
-  SetConsoleTitleA("Debug Console");
-  system("chcp 65001>nul");
-  HANDLE hCon = GetStdHandle(STD_OUTPUT_HANDLE);
-  INT hCrt = _open_osfhandle((INT)hCon, _O_TEXT);
-  FILE *hf = _fdopen(hCrt, "w");
-  setvbuf(hf, NULL, _IONBF, 0);
-  *stdout = *hf;
-  freopen("CONOUT$", "w+t", stdout);
+  if (AllocConsole()) {
+    SetConsoleTitleA("PreLoader Debug Console");
+
+    FILE *stream;
+    freopen_s(&stream, "CONOUT$", "w", stdout);
+    freopen_s(&stream, "CONOUT$", "w", stderr);
+    freopen_s(&stream, "CONIN$", "r", stdin);
+
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    setvbuf(stderr, nullptr, _IONBF, 0);
+  }
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call,
@@ -30,12 +30,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call,
       printf("Windows::Foundation::Initialize failed\n");
       return TRUE;
     }
-    Options::init();
-    Options::load();
 
     initMCPatches();
-    initImGuiHooks();
-
     DisableThreadLibraryCalls(hModule);
     break;
   }
@@ -43,7 +39,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call,
   case DLL_THREAD_DETACH:
     break;
   case DLL_PROCESS_DETACH:
-    Options::save();
     Windows::Foundation::Uninitialize();
     break;
   }

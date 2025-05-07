@@ -5,7 +5,7 @@
 
 #include "MCPatches.h"
 #include "api/memory/Hook.h"
-#include "gui/Options.h"
+
 inline uintptr_t FindSig(const std::string &moduleName,
                          const std::string &signature) {
   HMODULE moduleHandle = GetModuleHandleA(moduleName.c_str());
@@ -66,22 +66,20 @@ inline uintptr_t FindSig(const std::string &moduleName,
   ((uint8_t *)FindSig("Minecraft.Windows.exe", signature))
 
 void initMCPatches() {
-  if (Options::vanilla2DeferredEnabled &&
-      Options::disableRendererContextD3D12RTX) {
-    // Deferred rendering no longer requires RendererContextD3D12RTX
-    // since 1.19.80, so it can be disabled for better performance
-    // bgfx::d3d12rtx::RendererContextD3D12RTX::init
-    if (auto ptr = FindSignature("83 BF DC 02 00 00 65 ? ? ? ? ? ? ? ? ? ? ? ? "
-                                 "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? "
-                                 "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? 02 00 00 65");
-        ptr) {
-      // 1.20.30.21 preview
-      ScopedVP(ptr, 59, PAGE_READWRITE);
-      ptr[6] = 0x7F;
-      ptr[58] = 0x7F;
-    } else {
-      printf("Failed to patch bgfx::d3d12rtx::RendererContextD3D12RTX::init\n");
-    }
+
+  // Deferred rendering no longer requires RendererContextD3D12RTX
+  // since 1.19.80, so it can be disabled for better performance
+  // bgfx::d3d12rtx::RendererContextD3D12RTX::init
+  if (auto ptr = FindSignature("83 BF ? 02 00 00 65 ? ? ? ? ? ? ? ? ? ? ? ? "
+                               "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? "
+                               "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? 02 00 00 65");
+      ptr) {
+    // 1.20.30.21 preview
+    ScopedVP(ptr, 59, PAGE_READWRITE);
+    ptr[6] = 0x7F;
+    ptr[58] = 0x7F;
+  } else {
+    printf("Failed to patch bgfx::d3d12rtx::RendererContextD3D12RTX::init\n");
   }
 
   // Bypass VendorID check to support some Intel GPUs
@@ -108,42 +106,5 @@ void initMCPatches() {
     ptr[9] = 0;
   } else {
     printf("Failed to patch dragon::bgfximpl::toSamplerFlags\n");
-  }
-
-  // MinecraftGame::_updateLightingModel
-  if (auto ptr = FindSignature(
-          "41 83 FE 01 75 ? 48 8B 01 48 8B 40 ? FF 15 ? ? ? ? 32 C0 EB");
-      ptr) {
-    // 1.21.50
-    ScopedVP(ptr, 22, PAGE_READWRITE);
-    ptr[19] = 0xB0;
-    ptr[20] = 0x01;
-  } else if (auto ptr = FindSignature(
-                 "41 83 FF 01 75 ? 48 8B 01 48 8B 40 ? FF 15 ? ? ? ? 32 C0");
-             ptr) {
-    // 1.21.60
-    ScopedVP(ptr, 21, PAGE_READWRITE);
-    ptr[19] = 0xB0;
-    ptr[20] = 0x01;
-  } else {
-    printf("Failed to patch MinecraftGame::_updateLightingModel\n");
-  }
-
-  // MinecraftGame::startFrame
-  if (auto ptr = FindSignature("83 FF 01 75 ? 48 8B 42 ? 48 8D 4A 08 48 8B 40 "
-                               "40 FF 15 C0 68 FA 05 32 C0");
-      ptr) {
-    // 1.21.50
-    ScopedVP(ptr, 25, PAGE_READWRITE);
-    ptr[23] = 0xB0;
-    ptr[24] = 0x01;
-  } else if (auto ptr = FindSignature("FF 15 ? ? ? ? 32 C0 EB ? B0 01 33 D2");
-             ptr) {
-    // 1.21.60
-    ScopedVP(ptr, 14, PAGE_READWRITE);
-    ptr[6] = 0xB0;
-    ptr[7] = 0x01;
-  } else {
-    printf("Failed to patch MinecraftGame::startFrame\n");
   }
 }
