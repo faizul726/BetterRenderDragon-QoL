@@ -1,12 +1,15 @@
 // Options.cpp
 #include "Options.h"
+#include "imgui.h"
 #include <Windows.Storage.h>
 #include <iomanip> // For std::setw
 #include <nlohmann/json.hpp>
 #include <winrt/base.h>
 #include <wrl.h>
 #include <wrl/wrappers/corewrappers.h>
-#include "imgui.h"
+
+#include <shlobj.h>
+#include <windows.h>
 
 using nlohmann::json;
 
@@ -59,26 +62,41 @@ static void DebugTrace(const char *fmt, ...) {
   OutputDebugStringA(buf);
 }
 
-// 确保COM/WinRT先初始化（保证线程安全）
 struct WinRTApartmentInit {
   WinRTApartmentInit() {
     static bool inited = false;
     if (!inited) {
-      winrt::init_apartment(); // 自动适配 SingleThreaded/STA/MTA，推荐
+      winrt::init_apartment();
       inited = true;
     }
   }
 };
 static WinRTApartmentInit _apartment_init;
 
-std::string getLocalAppDataPath() {
-  size_t len;
-  char userProfile[260];
-  getenv_s(&len, userProfile, sizeof(userProfile), "USERPROFILE");
-  if (len > 0) {
+std::string getMinecraftModsPath() {
+  PWSTR path = NULL;
+  HRESULT hr = SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &path);
+  if (SUCCEEDED(hr)) {
+    char buf[MAX_PATH];
+    wcstombs(buf, path, MAX_PATH);
+    CoTaskMemFree(path);
+    return std::string(buf) +
+           "\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\mods";
+  }
+
+  char *userProfile = getenv("USERPROFILE");
+  if (userProfile) {
     return std::string(userProfile) +
-           "\\AppData\\Local\\Packages\\Microsoft."
-           "MinecraftUWP_8wekyb3d8bbwe\\LocalState\\mods";
+           "\\AppData\\Local\\Packages\\Microsoft.MinecraftUWP_"
+           "8wekyb3d8bbwe\\LocalState\\mods";
+  }
+
+  char *homeDrive = getenv("HOMEDRIVE");
+  char *homePath = getenv("HOMEPATH");
+  if (homeDrive && homePath) {
+    return std::string(homeDrive) + std::string(homePath) +
+           "\\AppData\\Local\\Packages\\Microsoft.MinecraftUWP_"
+           "8wekyb3d8bbwe\\LocalState\\mods";
   }
   return ".";
 }
@@ -101,8 +119,8 @@ bool Options::init() {
   options.push_back(&reloadShadersKey);
 
   if (optionsDir.empty()) {
-    std::string localStatePath = getLocalAppDataPath();
-    printf("getLocalAppDataPath: %s\n", localStatePath.c_str());
+    std::string localStatePath = getMinecraftModsPath();
+    printf("getMinecraftModsPath: %s\n", localStatePath.c_str());
     if (localStatePath.empty()) {
       return false;
     }

@@ -301,7 +301,6 @@ SKY_AUTO_STATIC_HOOK(
          // 1.21.80
          "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? B8 60 33 00 00"}),
     void, uintptr_t This, uintptr_t frameBuilderContext) {
-  std::cout << 11 << std::endl;
   bool clear = false;
   if (Options::reloadShadersAvailable && Options::reloadShaders) {
     Options::reloadShaders = false;
