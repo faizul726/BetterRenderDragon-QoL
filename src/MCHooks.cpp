@@ -207,6 +207,7 @@ SKY_AUTO_STATIC_HOOK(
   return result;
 }
 
+#include "materialbin.h"
 // AppPlatform::readAssetFile
 SKY_AUTO_STATIC_HOOK(
     readAssetFileHOOK, memory::HookPriority::Normal,
@@ -231,14 +232,28 @@ SKY_AUTO_STATIC_HOOK(
           "renderer/materials/" + p.substr(p.find_last_of('/') + 1);
       ResourceLocation location(binPath);
       std::string out;
-      printf("ResourcePackManager::load path=%s\n", binPath.c_str());
+      // printf("ResourcePackManager::load path=%s\n", binPath.c_str());
 
       bool success =
           ResourcePackManager_load(resourcePackManager, location, out);
-      if (success) {
-        retstr->assign(out);
+      if (success && !out.empty()) {
+        bool successful_update = true;
+        struct Buffer outbufdata = {0, 0};
+        if (update_file(out.length(), (const uint8_t *)out.c_str(),
+                        &outbufdata) != 0) {
+          // printf("Updating failed!");
+          successful_update = false;
+          free_buf(outbufdata);
+        }
+
+        if (!successful_update) {
+          retstr->assign(out);
+        } else {
+          retstr->assign((const char *)outbufdata.data, outbufdata.len);
+          free_buf(outbufdata);
+        }
       }
-      printf("ResourcePackManager::load ret=%d\n", success);
+      // printf("ResourcePackManager::load ret=%d\n", success);
     }
   }
   return result;

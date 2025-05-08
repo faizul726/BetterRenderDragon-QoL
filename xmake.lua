@@ -24,8 +24,10 @@ target("BetterRenderDragon")
     add_packages("nlohmann_json")
 
     if is_plat("windows") then
+        add_linkdirs("lib")
+
         add_packages("detours","imgui")
         remove_files("src/api/memory/android/**.cpp","src/api/memory/android/**.h")
         add_cxflags("/utf-8", "/EHa")
-        add_links("runtimeobject","dxgi","ws2_32","ntdll","userenv")
+        add_links("runtimeobject","dxgi","ws2_32","ntdll","userenv","materialbin")
     end
