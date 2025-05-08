@@ -6,6 +6,7 @@
 #include <winrt/base.h>
 #include <wrl.h>
 #include <wrl/wrappers/corewrappers.h>
+#include "imgui.h"
 
 using nlohmann::json;
 
@@ -33,8 +34,8 @@ Option<bool> redirectShaders = true;
 bool reloadShadersAvailable = true;
 std::atomic_bool reloadShaders = false;
 Option<bool> customUniformsEnabled = false;
-Option<int> uiKey = 0x75; // ImGuiKey_F6宏为0x75
-Option<int> reloadShadersKey = 0;
+Option<int> uiKey = ImGuiKey_F6;
+Option<int> reloadShadersKey = ImGuiKey_None;
 
 std::string optionsDir;
 std::string optionsFile;
