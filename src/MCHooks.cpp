@@ -12,6 +12,7 @@
 //=====================================================Vanilla2Deferred=====================================================
 
 char globalGraphicsMode = 0;
+int MaterialResourceManagerOffset = 0;
 
 using dragon::rendering::LightingModels;
 
@@ -44,10 +45,13 @@ SKY_AUTO_STATIC_HOOK(getGameVersionString, memory::HookPriority::Normal,
   auto version = origin(result);
   if (version.find("1.21.6") != std::string::npos) {
     NEW_VIDEO_SETTINGS = 723;
+    MaterialResourceManagerOffset = 1008;
   } else if (version.find("1.21.7") != std::string::npos) {
     NEW_VIDEO_SETTINGS = 726;
+    MaterialResourceManagerOffset = 1008;
   } else if (version.find("1.21.8") != std::string::npos) {
     NEW_VIDEO_SETTINGS = 730;
+    MaterialResourceManagerOffset = 960;
   }
   return version;
 }
@@ -76,6 +80,7 @@ SKY_AUTO_STATIC_HOOK(
   return true;
 }
 
+/*
 SKY_AUTO_STATIC_HOOK(getDeferred, memory::HookPriority::Normal,
                      std::initializer_list<const char *>({
                          // Android 1.21.70
@@ -98,7 +103,7 @@ SKY_AUTO_STATIC_HOOK(RayTracingsetGraphicsMode, memory::HookPriority::Normal,
   globalGraphicsMode = Graphics;
   origin(a1, Graphics);
 }
-
+*/
 SKY_AUTO_STATIC_HOOK(RayTracingsetLightingModel, memory::HookPriority::Normal,
                      std::initializer_list<const char *>({// Win 1.21.60
                                                           "89 51 ? 85 D2 74"}),
@@ -257,4 +262,75 @@ SKY_AUTO_STATIC_HOOK(
     }
   }
   return result;
+}
+
+using dragon::materials::MaterialResourceManager;
+
+typedef void (*PFN_mce_framebuilder_BgfxFrameBuilder_discardFrame)(
+    uintptr_t This, bool waitForPreviousFrame);
+typedef void (*PFN_dragon_materials_CompiledMaterialManager_freeShaderBlobs)(
+    uintptr_t This);
+PFN_mce_framebuilder_BgfxFrameBuilder_discardFrame discardFrame = nullptr;
+PFN_dragon_materials_CompiledMaterialManager_freeShaderBlobs freeShaderBlobs =
+    nullptr;
+
+bool discardFrameAndClearShaderCaches(uintptr_t bgfxFrameBuilder) {
+  uintptr_t compiledMaterialManager =
+      *(uintptr_t *)(*(uintptr_t *)(bgfxFrameBuilder + 40) + 16) + 776;
+  uintptr_t mExtractor = *(uintptr_t *)(bgfxFrameBuilder + 32);
+  MaterialResourceManager *mMaterialsManager = (MaterialResourceManager *)*(
+      uintptr_t *)(mExtractor + MaterialResourceManagerOffset);
+  if (discardFrame && freeShaderBlobs && mMaterialsManager) {
+    discardFrame(bgfxFrameBuilder, true);
+    mMaterialsManager->forceTrim();
+    freeShaderBlobs(compiledMaterialManager);
+    freeShaderBlobs(compiledMaterialManager);
+    return true;
+  }
+  return false;
+}
+// mce::framebuilder::BgfxFrameBuilder::endFrame
+SKY_AUTO_STATIC_HOOK(
+    mce_framebuilder_BgfxFrameBuilder_endFrame, memory::HookPriority::Normal,
+    std::initializer_list<const char *>(
+        {// 1.21.60
+         "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? "
+         "B8 10 29 00 00",
+         // 1.21.70
+         "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? B8 00 32 00 00",
+         // 1.21.80
+         "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? B8 60 33 00 00"}),
+    void, uintptr_t This, uintptr_t frameBuilderContext) {
+  std::cout << 11 << std::endl;
+  bool clear = false;
+  if (Options::reloadShadersAvailable && Options::reloadShaders) {
+    Options::reloadShaders = false;
+    clear = true;
+  }
+  if (clear && discardFrameAndClearShaderCaches(This)) {
+    return;
+  }
+  origin(This, frameBuilderContext);
+}
+
+void initMCHooks() {
+
+  discardFrame = (PFN_mce_framebuilder_BgfxFrameBuilder_discardFrame)
+      memory::resolveIdentifier(
+          {"48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 54 41 55 41 56 41 "
+           "57 48 81 EC 90 00 00 00 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? "
+           "? ? 44 0F B6 EA"});
+  if (!discardFrame) {
+    printf("mce::framebuilder::BgfxFrameBuilder::discardFrame not found\n");
+  }
+
+  freeShaderBlobs =
+      (PFN_dragon_materials_CompiledMaterialManager_freeShaderBlobs)
+          memory::resolveIdentifier(
+              {"48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 54 41 55 41 56 "
+               "41 57 48 83 EC 20 4C 8B E9 48 83 C1 40"});
+  if (!freeShaderBlobs) {
+    printf("dragon::materials::CompiledMaterialManager::freeShaderBlobs not "
+           "found\n");
+  }
 }

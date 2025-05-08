@@ -125,16 +125,16 @@ void updateImGui() {
         ImGui::Indent();
         ImGui::Checkbox("Load shaders from resource pack",
                         Options::redirectShaders.ptr());
-        // if (Options::reloadShadersAvailable) {
-        //   bool disable = Options::reloadShaders;
-        //   if (disable)
-        //     ImGui::BeginDisabled();
-        //   if (ImGui::Button("Reload shaders")) {
-        //    Options::reloadShaders = true;
-        //  }
-        //  if (disable)
-        //    ImGui::EndDisabled();
-        //}
+         if (Options::reloadShadersAvailable) {
+          bool disable = Options::reloadShaders;
+           if (disable)
+             ImGui::BeginDisabled();
+           if (ImGui::Button("Reload shaders")) {
+            Options::reloadShaders = true;
+          }
+          if (disable)
+            ImGui::EndDisabled();
+        }
         ImGui::Unindent();
       }
 

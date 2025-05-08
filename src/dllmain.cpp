@@ -22,16 +22,18 @@ void openConsole() {
     setvbuf(stderr, nullptr, _IONBF, 0);
   }
 }
+void initMCHooks();
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call,
                       LPVOID lpReserved) {
   switch (ul_reason_for_call) {
   case DLL_PROCESS_ATTACH: {
-    // openConsole();
+    openConsole();
 
     Options::init();
     Options::load();
 
+    initMCHooks();
     initMCPatches();
     initImGuiHooks();
 

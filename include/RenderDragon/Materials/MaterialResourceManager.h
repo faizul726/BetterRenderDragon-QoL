@@ -4,7 +4,6 @@
 #include <mutex>
 #include <unordered_map>
 
-
 namespace dragon::materials {
 struct MaterialLocation {
   uint64_t mHash;
@@ -21,35 +20,34 @@ public:
 };
 }; // namespace std
 
+#include <unordered_set>
+
 namespace dragon::materials {
 struct MaterialResource {
-  std::shared_ptr<void> ptr;
-  bool used;
+  std::shared_ptr<void> mMaterial;
+  bool mUsed;
 };
-
+class ResolvedMaterialResource {
+  std::unique_ptr<void> materialPtr;
+  std::shared_ptr<void> mCompiledMaterial;
+};
 struct MaterialResourceManager {
   std::unordered_map<MaterialLocation, MaterialResource> mCache;
+  std::unordered_set<MaterialLocation> mMaterialsToReload;
+  std::vector<std::shared_ptr<void>> mMaterialsToTrim;
   std::mutex mMutex;
 
-  void trim() {
-    mMutex.lock();
-    for (auto it = mCache.begin(); it != mCache.end(); it++) {
-      if (it->second.used) {
-        it->second.used = false;
-      } else {
-        mCache.erase(it);
-      }
-    }
-    mMutex.unlock();
-  }
-
   void forceTrim() {
-    mMutex.lock();
-    for (auto it = mCache.begin(); it != mCache.end(); it++) {
-      it->second.used = false;
-      mCache.erase(it);
+    std::lock_guard<std::mutex> lock(mMutex);
+    for (auto it = mCache.begin(); it != mCache.end();) {
+      MaterialResource &res = it->second;
+      res.mUsed = false;
+      it = mCache.erase(it);
     }
-    mMutex.unlock();
+    for (auto &ptr : mMaterialsToTrim) {
+      ptr.reset();
+    }
+    mMaterialsToTrim.clear();
   }
 };
 } // namespace dragon::materials
