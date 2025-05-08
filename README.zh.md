@@ -16,6 +16,7 @@
 ![Stars](https://img.shields.io/github/stars/QYCottage/BetterRenderDragon?style=flat-square)
 ![Forks](https://img.shields.io/github/forks/QYCottage/BetterRenderDragon?style=flat-square)
 ![License](https://img.shields.io/github/license/QYCottage/BetterRenderDragon?style=flat-square)
+[![Discord](https://img.shields.io/discord/1124235469245382698?style=flat-square&logo=discord)](https://discord.gg/8nGcV8QkKZ)
 
 </div>
 
