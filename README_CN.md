@@ -1,6 +1,23 @@
+<p align="right">
+  <a href="./README.md">
+    <img src="https://img.shields.io/badge/Switch%20to-English%20Documentation-blue?style=flat-square&logo=googletranslate&labelColor=3e3e3e" alt="Switch to English" />
+  </a>
+</p>
+
 # 🚀 BetterRenderDragon
 
-**为渲染龙（RenderDragon）添加更多功能！适用于 Minecraft Bedrock Edition 1.21.50 ~ 1.21.70 及以上。**
+**为渲染龙（RenderDragon）添加更多功能！适用于 Minecraft Bedrock Edition 1.21.60 ~ 1.21.80 及以上。**
+
+<div align="center">
+
+![Release](https://img.shields.io/github/v/release/QYCottage/BetterRenderDragon?style=flat-square)
+![Total Downloads](https://img.shields.io/github/downloads/QYCottage/BetterRenderDragon/total?style=flat-square)
+![Latest Release Downloads](https://img.shields.io/github/downloads/QYCottage/BetterRenderDragon/latest/total?style=flat-square)
+![Stars](https://img.shields.io/github/stars/QYCottage/BetterRenderDragon?style=flat-square)
+![Forks](https://img.shields.io/github/forks/QYCottage/BetterRenderDragon?style=flat-square)
+![License](https://img.shields.io/github/license/QYCottage/BetterRenderDragon?style=flat-square)
+
+</div>
 
 ---
 
@@ -32,7 +49,7 @@
 
 2. **下载并解压 [BetterRenderDragon.zip](#)**
 
-   - 从 [Releases](https://github.com/dreamguxiang/BetterRenderDragon/releases/latest) 页面下载。
+   - 从 [Releases](https://github.com/QYCottage/BetterRenderDragon/releases/latest) 页面下载。
 
 3. **复制插件文件**
 
@@ -52,7 +69,7 @@
 
 2. **下载并解压 [BetterRenderDragon.zip](#)**
 
-   - 从 [Releases](https://github.com/dreamguxiang/BetterRenderDragon/releases/latest) 页面下载
+   - 从 [Releases](https://github.com/QYCottage/BetterRenderDragon/releases/latest) 页面下载
 
 3. **启动 MC**
    - 正式版：双击 `LaunchMinecraft.bat`

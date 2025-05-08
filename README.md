@@ -1,6 +1,22 @@
+<p align="right">
+  <a href="./README.zh.md">
+    <img src="https://img.shields.io/badge/切换为-中文文档-46c048?style=flat-square&logo=googletranslate&labelColor=3e3e3e" alt="切换为中文" />
+  </a>
+</p>
 # 🚀 BetterRenderDragon
 
 **Add more features to RenderDragon! Compatible with Minecraft Bedrock Edition 1.21.60 and above.**
+
+<div align="center">
+
+![Release](https://img.shields.io/github/v/release/QYCottage/BetterRenderDragon?style=flat-square)
+![Total Downloads](https://img.shields.io/github/downloads/QYCottage/BetterRenderDragon/total?style=flat-square)
+![Latest Release Downloads](https://img.shields.io/github/downloads/QYCottage/BetterRenderDragon/latest/total?style=flat-square)
+![Stars](https://img.shields.io/github/stars/QYCottage/BetterRenderDragon?style=flat-square)
+![Forks](https://img.shields.io/github/forks/QYCottage/BetterRenderDragon?style=flat-square)
+![License](https://img.shields.io/github/license/QYCottage/BetterRenderDragon?style=flat-square)
+
+</div>
 
 ---
 
@@ -32,7 +48,7 @@
 
 2. **Download and Unzip [BetterRenderDragon.zip](#)**
 
-   - Download from the [Releases](https://github.com/dreamguxiang/BetterRenderDragon/releases/latest) page.
+   - Download from the [Releases](https://github.com/QYCottage/BetterRenderDragon/releases/latest) page.
 
 3. **Copy Plugin Files**
 
@@ -52,7 +68,7 @@
 
 2. **Download and Unzip [BetterRenderDragon.zip](#)**
 
-   - Download from the [Releases](https://github.com/dreamguxiang/BetterRenderDragon/releases/latest) page.
+   - Download from the [Releases](https://github.com/QYCottage/BetterRenderDragon/releases/latest) page.
 
 3. **Start MC**
    - For release version: Double-click `LaunchMinecraft.bat`
