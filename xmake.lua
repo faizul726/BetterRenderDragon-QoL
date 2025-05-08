@@ -4,6 +4,7 @@ add_repositories("liteldev-repo https://github.com/LiteLDev/xmake-repo.git")
 
 if is_plat("windows") then
     add_requires("detours v4.0.1-xmake.1")
+    add_requires("imgui v1.91.0-docking", {configs = {dx11 = true, dx12 = true}})
 elseif is_plat("android") then   
 
 end
@@ -23,19 +24,8 @@ target("BetterRenderDragon")
     add_packages("nlohmann_json")
 
     if is_plat("windows") then
-        add_packages("detours")
+        add_packages("detours","imgui")
         remove_files("src/api/memory/android/**.cpp","src/api/memory/android/**.h")
         add_cxflags("/utf-8", "/EHa")
         add_links("runtimeobject","dxgi","ws2_32","ntdll","userenv")
-    elseif is_plat("android") then
-        remove_files(
-            "src/api/memory/win/**.cpp",
-            "src/api/memory/win/**.h",
-            "src/dllmain.cpp",
-            "src/MCPatches.cpp",
-            "src/MCPatches.h"
-            )
-        add_linkdirs("lib/ARM64")
-        add_links("GlossHook")
-        add_cxflags("-O3")
     end

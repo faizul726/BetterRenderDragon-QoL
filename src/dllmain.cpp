@@ -2,6 +2,8 @@
 #include <wrl.h>
 
 #include "MCPatches.h"
+#include "gui/Options.h"
+#include "imgui/ImGuiHooks.h"
 
 #include <cstdio>
 #include <fcntl.h>
@@ -25,14 +27,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call,
                       LPVOID lpReserved) {
   switch (ul_reason_for_call) {
   case DLL_PROCESS_ATTACH: {
-    openConsole();
-    if (FAILED(Windows::Foundation::Initialize(RO_INIT_MULTITHREADED))) {
-      printf("Windows::Foundation::Initialize failed\n");
-      return TRUE;
-    }
+    // openConsole();
+
+    Options::init();
+    Options::load();
 
     initMCPatches();
-    DisableThreadLibraryCalls(hModule);
+    initImGuiHooks();
+
     break;
   }
   case DLL_THREAD_ATTACH:

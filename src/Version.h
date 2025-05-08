@@ -1,3 +1,3 @@
 #pragma once
 
-#define BetterRDVersion "v1.4.8"
+#define BetterRDVersion "v1.5.0"

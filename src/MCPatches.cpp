@@ -5,6 +5,7 @@
 
 #include "MCPatches.h"
 #include "api/memory/Hook.h"
+#include "gui/Options.h"
 
 inline uintptr_t FindSig(const std::string &moduleName,
                          const std::string &signature) {
@@ -70,16 +71,19 @@ void initMCPatches() {
   // Deferred rendering no longer requires RendererContextD3D12RTX
   // since 1.19.80, so it can be disabled for better performance
   // bgfx::d3d12rtx::RendererContextD3D12RTX::init
-  if (auto ptr = FindSignature("83 BF ? 02 00 00 65 ? ? ? ? ? ? ? ? ? ? ? ? "
-                               "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? "
-                               "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? 02 00 00 65");
-      ptr) {
-    // 1.20.30.21 preview
-    ScopedVP(ptr, 59, PAGE_READWRITE);
-    ptr[6] = 0x7F;
-    ptr[58] = 0x7F;
-  } else {
-    printf("Failed to patch bgfx::d3d12rtx::RendererContextD3D12RTX::init\n");
+  if (Options::vanilla2DeferredEnabled &&
+      Options::disableRendererContextD3D12RTX) {
+    if (auto ptr = FindSignature("83 BF ? 02 00 00 65 ? ? ? ? ? ? ? ? ? ? ? ? "
+                                 "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? "
+                                 "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? 02 00 00 65");
+        ptr) {
+      // 1.20.30.21 preview
+      ScopedVP(ptr, 59, PAGE_READWRITE);
+      ptr[6] = 0x7F;
+      ptr[58] = 0x7F;
+    } else {
+      printf("Failed to patch bgfx::d3d12rtx::RendererContextD3D12RTX::init\n");
+    }
   }
 
   // Bypass VendorID check to support some Intel GPUs
