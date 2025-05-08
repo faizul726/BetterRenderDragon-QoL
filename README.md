@@ -1,6 +1,6 @@
 <p align="right">
   <a href="./README.zh.md">
-    <img src="https://img.shields.io/badge/切换为-中文文档-46c048?style=flat-square&logo=googletranslate&labelColor=3e3e3e" alt="切换为中文" />
+    <img src="https://img.shields.io/badge/切换为-中文-46c048?style=flat-square&logo=googletranslate&labelColor=3e3e3e" alt="切换为中文" />
   </a>
 </p>
 
