@@ -20,7 +20,7 @@ using ABI::Windows::Storage::IStorageItem;
 using Microsoft::WRL::ComPtr;
 using Microsoft::WRL::Wrappers::HString;
 using Microsoft::WRL::Wrappers::HStringReference;
-
+namespace brd {
 // --- Option defs ---
 namespace Options {
 Option<bool> showImGui = true;
@@ -235,3 +235,4 @@ bool Options::isDirty() {
   }
   return false;
 }
+} // namespace brd

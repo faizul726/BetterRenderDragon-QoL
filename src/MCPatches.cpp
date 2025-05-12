@@ -71,8 +71,8 @@ void initMCPatches() {
   // Deferred rendering no longer requires RendererContextD3D12RTX
   // since 1.19.80, so it can be disabled for better performance
   // bgfx::d3d12rtx::RendererContextD3D12RTX::init
-  if (Options::vanilla2DeferredEnabled &&
-      Options::disableRendererContextD3D12RTX) {
+  if (brd::Options::vanilla2DeferredEnabled &&
+      brd::Options::disableRendererContextD3D12RTX) {
     if (auto ptr = FindSignature("83 BF ? 02 00 00 65 ? ? ? ? ? ? ? ? ? ? ? ? "
                                  "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? "
                                  "? ? ? ? ? ? ? ? ? ? ? ? ? ? ? 02 00 00 65");

@@ -76,7 +76,7 @@ void releaseRT() {
 
 bool initializeImguiBackend(IDXGISwapChain *pSwapChain) {
   if (SUCCEEDED(pSwapChain->GetDevice(IID_ID3D12Device, (void **)&device))) {
-    Options::vanilla2DeferredAvailable = true;
+    brd::Options::vanilla2DeferredAvailable = true;
     rendererType = "Direct3D 12";
 
     initializeImGui();
@@ -244,7 +244,7 @@ void releaseRT() {
 }
 
 bool initializeImguiBackend(IDXGISwapChain *pSwapChain) {
-  Options::vanilla2DeferredAvailable = false;
+  brd::Options::vanilla2DeferredAvailable = false;
   rendererType = "Direct3D 11";
 
   initializeImGui();

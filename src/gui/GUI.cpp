@@ -5,6 +5,7 @@
 
 #include "Options.h"
 #include "Version.h"
+using namespace brd;
 
 void initializeImGui() {
   ImGui::CreateContext();
@@ -125,11 +126,11 @@ void updateImGui() {
         ImGui::Indent();
         ImGui::Checkbox("Load shaders from resource pack",
                         Options::redirectShaders.ptr());
-         if (Options::reloadShadersAvailable) {
+        if (Options::reloadShadersAvailable) {
           bool disable = Options::reloadShaders;
-           if (disable)
-             ImGui::BeginDisabled();
-           if (ImGui::Button("Reload shaders")) {
+          if (disable)
+            ImGui::BeginDisabled();
+          if (ImGui::Button("Reload shaders")) {
             Options::reloadShaders = true;
           }
           if (disable)

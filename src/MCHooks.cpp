@@ -1,10 +1,10 @@
 
 #include "Core/Math/Vec4.h"
-#include "Core/Resource/ResourceHelper.h"
-#include "RenderDragon/Materials/MaterialResourceManager.h"
-#include "Renderdragon/Materials/MaterialUniformName.h"
-#include "Renderdragon/Materials/ShaderCodePlatform.h"
-#include "Renderdragon/Rendering/LightingModels.h"
+#include "mc/client/RenderDragon/Materials/MaterialResourceManager.h"
+#include "mc/client/Renderdragon/Materials/MaterialUniformName.h"
+#include "mc/client/Renderdragon/Materials/ShaderCodePlatform.h"
+#include "mc/client/Renderdragon/Rendering/LightingModels.h"
+#include "mc/deps/core/resource/ResourceLocation.h"
 
 #include "gui/Options.h"
 
@@ -17,10 +17,10 @@ int MaterialResourceManagerOffset = 0;
 using dragon::rendering::LightingModels;
 
 bool shouldForceEnableNewVideoSettings() {
-  return Options::vanilla2DeferredAvailable &&
-         Options::vanilla2DeferredEnabled &&
-         Options::newVideoSettingsAvailable &&
-         Options::forceEnableDeferredTechnicalPreview;
+  return brd::Options::vanilla2DeferredAvailable &&
+         brd::Options::vanilla2DeferredEnabled &&
+         brd::Options::newVideoSettingsAvailable &&
+         brd::Options::forceEnableDeferredTechnicalPreview;
 }
 //======================================================CustomUniforms======================================================
 
@@ -133,22 +133,16 @@ SKY_AUTO_STATIC_HOOK(
   return origin(a1, lightingModel, a3);
 }
 
-/*
-SKY_AUTO_STATIC_HOOK(
-    getGraphicsMode, memory::HookPriority::Normal,
-    std::initializer_list<const char *>(
-        {// Win 1.21.60
-         "40 53 48 83 EC 20 48 8B 01 48 8B D9 48 8B 80 ? ? ? "
-         "? FF 15 ? ? ? ? 84 C0 74 ? B0 02",
-         // Android 1.21.60
-         "? ? ? A9 ? ? ? F9 FD 03 00 91 ? ? ? F9 F3 03 00 AA ? ? ? F9 00 01 3F "
-         "D6 ? ? ? 36 ? ? ? 52 ? ? ? F9 ? ? ? A8 C0 03 5F D6 ? ? ? F9"}),
-    char, void *a1) {
+SKY_AUTO_STATIC_HOOK(getGraphicsMode, memory::HookPriority::Normal,
+                     std::initializer_list<const char *>(
+                         {// Win 1.21.60
+                          "40 53 48 83 EC 20 48 8B 01 48 8B D9 48 8B 80 ? ? ? "
+                          "? FF 15 ? ? ? ? 84 C0 74 ? B0 02"}),
+                     char, void *a1) {
   char result = origin(a1);
   globalGraphicsMode = result;
   return result;
 }
-*/
 
 // BaseOptions::get
 SKY_AUTO_STATIC_HOOK(
@@ -159,7 +153,7 @@ SKY_AUTO_STATIC_HOOK(
     void *, void *This, int a3) {
   auto res = origin(This, a3);
   if (a3 == NEW_VIDEO_SETTINGS) {
-    Options::newVideoSettingsAvailable = true;
+    brd::Options::newVideoSettingsAvailable = true;
     if (shouldForceEnableNewVideoSettings()) {
       *(bool *)((uintptr_t)res + 0x10) = true;
       *(bool *)((uintptr_t)res + 0x11) = true;
@@ -228,7 +222,7 @@ SKY_AUTO_STATIC_HOOK(
          "8B 05 ? ? ? ? 48 33 C4 48 89 45 ? 48 8B FA"}),
     std::string *, void *This, std::string *retstr, Core::Path &path) {
   std::string *result = origin(This, retstr, path);
-  if (Options::materialBinLoaderEnabled && Options::redirectShaders &&
+  if (brd::Options::materialBinLoaderEnabled && brd::Options::redirectShaders &&
       resourcePackManager) {
     const std::string &p = path.getUtf8StdString();
     if (p.find("/data/renderer/materials/") != std::string::npos &&
@@ -264,6 +258,8 @@ SKY_AUTO_STATIC_HOOK(
   return result;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+
 using dragon::materials::MaterialResourceManager;
 
 typedef void (*PFN_mce_framebuilder_BgfxFrameBuilder_discardFrame)(
@@ -297,13 +293,15 @@ SKY_AUTO_STATIC_HOOK(
          "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? "
          "B8 10 29 00 00",
          // 1.21.70
-         "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? B8 00 32 00 00",
+         "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? "
+         "B8 00 32 00 00",
          // 1.21.80
-         "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? B8 60 33 00 00"}),
+         "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? "
+         "B8 60 33 00 00"}),
     void, uintptr_t This, uintptr_t frameBuilderContext) {
   bool clear = false;
-  if (Options::reloadShadersAvailable && Options::reloadShaders) {
-    Options::reloadShaders = false;
+  if (brd::Options::reloadShadersAvailable && brd::Options::reloadShaders) {
+    brd::Options::reloadShaders = false;
     clear = true;
   }
   if (clear && discardFrameAndClearShaderCaches(This)) {
@@ -312,13 +310,15 @@ SKY_AUTO_STATIC_HOOK(
   origin(This, frameBuilderContext);
 }
 
+////////////////////////////////////////////////////////////////////////////////
 void initMCHooks() {
 
   discardFrame = (PFN_mce_framebuilder_BgfxFrameBuilder_discardFrame)
-      memory::resolveIdentifier(
-          {"48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 54 41 55 41 56 41 "
-           "57 48 81 EC 90 00 00 00 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? "
-           "? ? 44 0F B6 EA"});
+      memory::resolveIdentifier({"48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? "
+                                 "57 41 54 41 55 41 56 41 "
+                                 "57 48 81 EC 90 00 00 00 48 8B 05 ? ? ? ? "
+                                 "48 33 C4 48 89 84 24 ? ? "
+                                 "? ? 44 0F B6 EA"});
   if (!discardFrame) {
     printf("mce::framebuilder::BgfxFrameBuilder::discardFrame not found\n");
   }
@@ -326,7 +326,8 @@ void initMCHooks() {
   freeShaderBlobs =
       (PFN_dragon_materials_CompiledMaterialManager_freeShaderBlobs)
           memory::resolveIdentifier(
-              {"48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 54 41 55 41 56 "
+              {"48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 54 41 55 41 "
+               "56 "
                "41 57 48 83 EC 20 4C 8B E9 48 83 C1 40"});
   if (!freeShaderBlobs) {
     printf("dragon::materials::CompiledMaterialManager::freeShaderBlobs not "

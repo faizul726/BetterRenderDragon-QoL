@@ -30,8 +30,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call,
   case DLL_PROCESS_ATTACH: {
     // openConsole();
 
-    Options::init();
-    Options::load();
+
+    brd::Options::init();
+    brd::Options::load();
 
     initMCHooks();
     initMCPatches();

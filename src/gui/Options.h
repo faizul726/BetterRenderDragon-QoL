@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 #include <windows.h>
-
+namespace brd {
 class IOption {
 public:
   virtual void record() = 0;
@@ -64,3 +64,4 @@ bool save();
 void record();
 bool isDirty();
 } // namespace Options
+} // namespace brd
