@@ -4,10 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       injector_link:
-        description: 'Direct link to injector executable'
-        required: true
+        description: 'Direct link to injector executable (MUST fill up for newinject or both)'
         type: string
-
+      
+      uwpinject_link:
+        description: 'Direct link to uwpinject. (MUST fill up for oldinject or both)'
+        type: string
+      
       dll_link:
         description: 'Direct link to DLL file'
         required: true
@@ -38,8 +41,10 @@ jobs:
     - name: Download and ZIP
       shell: pwsh
       run: |
-        mkdir temp
         mkdir output
+        Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "output\BetterRenderDragon.dll"
+
+        mkdir temp
         pushd temp
         $variant = "${{ github.event.inputs.variant }}"
 
@@ -47,7 +52,7 @@ jobs:
             'newinject' {
                 mkdir plugins
                 Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "Injector.exe"
-                Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "plugins\BetterRenderDragon.dll"
+                Copy-Item -Path "..\output\BetterRenderDragon.dll" -Destination "plugins"
                 
                 '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0Injector.exe'' -release"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
                 '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0Injector.exe'' -preview"' | Out-File -FilePath "LaunchMinecraftPreview.bat" -Encoding ascii
@@ -57,8 +62,9 @@ jobs:
             }
             'oldinject' {
                 mkdir dlls
-                Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "uwpinject.exe"
-                Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "dlls\BetterRenderDragon.dll"
+                Invoke-WebRequest "${{ github.event.inputs.uwpinject_link }}" -OutFile "uwpinject.exe"
+                Copy-Item -Path "..\output\BetterRenderDragon.dll" -Destination "dlls"
+
 
                 '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0launch.ps1'' ''Microsoft.MinecraftUWP''"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
                 '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0launch.ps1'' ''Microsoft.MinecraftWindowsBeta''"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
@@ -71,7 +77,7 @@ jobs:
                 pushd newinject
                 mkdir plugins
                 Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "Injector.exe"
-                Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "plugins\BetterRenderDragon.dll"
+                Copy-Item -Path "..\..\output\BetterRenderDragon.dll" -Destination "plugins"
                 
                 '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0Injector.exe'' -release"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
                 '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0Injector.exe'' -preview"' | Out-File -FilePath "LaunchMinecraftPreview.bat" -Encoding ascii
@@ -82,8 +88,8 @@ jobs:
                 pushd oldinject
                 
                 mkdir dlls
-                Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "uwpinject.exe"
-                Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "dlls\BetterRenderDragon.dll"
+                Invoke-WebRequest "${{ github.event.inputs.uwpinject_link }}" -OutFile "uwpinject.exe"
+                Copy-Item -Path "..\..\output\BetterRenderDragon.dll" -Destination "dlls"
 
                 '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0launch.ps1'' ''Microsoft.MinecraftUWP''"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
                 '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0launch.ps1'' ''Microsoft.MinecraftWindowsBeta''"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
@@ -93,7 +99,6 @@ jobs:
 
                 Compress-Archive -Path "temp\oldinject\*" -DestinationPath "output\BetterRenderDragon-oldinject.zip"
                 Compress-Archive -Path "temp\newinject\*" -DestinationPath "output\BetterRenderDragon.zip"
-                Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "output\BetterRenderDragon.dll"
             }
         }
         popd
