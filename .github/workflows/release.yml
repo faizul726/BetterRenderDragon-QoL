@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    input:
+      injector_link:
+        description: 'Direct link to injector executable'
+        required: true
+        type: string
+
+      dll_link:
+        description: 'Direct link to DLL file'
+        required: true
+        type: string
+
+      version:
+        description: 'Version number (example: v1.6.9)'
+        required: true
+        type: string
+
+      variant:
+        description: 'Variants to release'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+        - newinject
+        - oldinject
+        - both
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Download and ZIP
+      shell: pwsh
+      run: |
+        mkdir temp
+        mkdir output
+        pushd temp
+        $variant = "${{ github.event.inputs.variant }}"
+
+        switch ($variant) {
+            'newinject' {
+                mkdir plugins
+                Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "Injector.exe"
+                Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "plugins\BetterRenderDragon.dll"
+                
+                @'
+                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0Injector.exe' -release"
+                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+                
+                
+                @'
+                 @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0Injector.exe' -preview"
+                '@ | Out-File -FilePath "LaunchMinecraftPreview.bat" -Encoding ascii
+
+                popd
+                Compress-Archive -Path "temp\*" -DestinationPath "output\BetterRenderDragon.zip"
+            }
+            'oldinject' {
+                mkdir dlls
+                Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "uwpinject.exe"
+                Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "dlls\BetterRenderDragon.dll"
+
+                @'
+                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0launch.ps1' 'Microsoft.MinecraftUWP'"
+                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+
+                @'
+                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0launch.ps1' 'Microsoft.MinecraftWindowsBeta'"
+                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+
+                popd
+                Compress-Archive -Path "temp\*" -DestinationPath "output\BetterRenderDragon-oldinject.zip"
+            }
+            'both' {
+                mkdir newinject
+                pushd newinject
+                mkdir plugins
+                Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "Injector.exe"
+                Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "plugins\BetterRenderDragon.dll"
+                
+                @'
+                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0Injector.exe' -release"
+                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+                
+                
+                @'
+                 @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0Injector.exe' -preview"
+                '@ | Out-File -FilePath "LaunchMinecraftPreview.bat" -Encoding ascii
+
+                popd
+
+                mkdir oldinject
+                pushd oldinject
+                
+                mkdir dlls
+                Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "uwpinject.exe"
+                Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "dlls\BetterRenderDragon.dll"
+
+                @'
+                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0launch.ps1' 'Microsoft.MinecraftUWP'"
+                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+
+                @'
+                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0launch.ps1' 'Microsoft.MinecraftWindowsBeta'"
+                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+
+                popd
+                popd
+
+                Compress-Archive -Path "temp\oldinject\*" -DestinationPath "output\BetterRenderDragon-oldinject.zip"
+                Compress-Archive -Path "temp\newinject\*" -DestinationPath "output\BetterRenderDragon.zip"
+                Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "output\BetterRenderDragon.dll"
+            }
+        }
+        popd
+    
+    - name: Release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh release create \
+        ${{ github.event.inputs.version }} \
+        output/* \
+        --title "${{ github.event.inputs.version }}" \
+        --notes "Relased by GitHub Actions." \
+        --latest
