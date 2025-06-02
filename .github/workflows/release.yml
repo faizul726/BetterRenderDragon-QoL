@@ -2,7 +2,7 @@ name: Release
 
 on:
   workflow_dispatch:
-    input:
+    inputs:
       injector_link:
         description: 'Direct link to injector executable'
         required: true
