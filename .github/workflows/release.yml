@@ -46,14 +46,8 @@ jobs:
                 Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "Injector.exe"
                 Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "plugins\BetterRenderDragon.dll"
                 
-                @'
-                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0Injector.exe' -release"
-                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
-                
-                
-                @'
-                 @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0Injector.exe' -preview"
-                '@ | Out-File -FilePath "LaunchMinecraftPreview.bat" -Encoding ascii
+                '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0Injector.exe'' -release"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+                '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0Injector.exe'' -preview"' | Out-File -FilePath "LaunchMinecraftPreview.bat" -Encoding ascii
 
                 popd
                 Compress-Archive -Path "temp\*" -DestinationPath "output\BetterRenderDragon.zip"
@@ -63,13 +57,8 @@ jobs:
                 Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "uwpinject.exe"
                 Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "dlls\BetterRenderDragon.dll"
 
-                @'
-                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0launch.ps1' 'Microsoft.MinecraftUWP'"
-                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
-
-                @'
-                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0launch.ps1' 'Microsoft.MinecraftWindowsBeta'"
-                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+                '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0launch.ps1'' ''Microsoft.MinecraftUWP''"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+                '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0launch.ps1'' ''Microsoft.MinecraftWindowsBeta''"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
 
                 popd
                 Compress-Archive -Path "temp\*" -DestinationPath "output\BetterRenderDragon-oldinject.zip"
@@ -81,14 +70,8 @@ jobs:
                 Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "Injector.exe"
                 Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "plugins\BetterRenderDragon.dll"
                 
-                @'
-                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0Injector.exe' -release"
-                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
-                
-                
-                @'
-                 @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0Injector.exe' -preview"
-                '@ | Out-File -FilePath "LaunchMinecraftPreview.bat" -Encoding ascii
+                '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0Injector.exe'' -release"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+                '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0Injector.exe'' -preview"' | Out-File -FilePath "LaunchMinecraftPreview.bat" -Encoding ascii
 
                 popd
 
@@ -99,13 +82,8 @@ jobs:
                 Invoke-WebRequest "${{ github.event.inputs.injector_link }}" -OutFile "uwpinject.exe"
                 Invoke-WebRequest "${{ github.event.inputs.dll_link }}" -OutFile "dlls\BetterRenderDragon.dll"
 
-                @'
-                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0launch.ps1' 'Microsoft.MinecraftUWP'"
-                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
-
-                @'
-                @powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0launch.ps1' 'Microsoft.MinecraftWindowsBeta'"
-                '@ | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+                '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0launch.ps1'' ''Microsoft.MinecraftUWP''"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
+                '@powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ''%~dp0launch.ps1'' ''Microsoft.MinecraftWindowsBeta''"' | Out-File -FilePath "LaunchMinecraft.bat" -Encoding ascii
 
                 popd
                 popd
